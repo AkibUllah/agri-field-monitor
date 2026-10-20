@@ -1,0 +1,50 @@
+[project]
+name = "agri-field-monitor"
+version = "0.1.0"
+description = "AWD irrigation field monitoring backend: Django 4.2, Strawberry GraphQL, DRF uploads, alerting and weekly reports"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Akib Jafor" }]
+dependencies = [
+    "Django>=4.2,<5.0",
+    "strawberry-graphql>=0.230",
+    "strawberry-graphql-django>=0.40",
+    "djangorestframework>=3.15",
+    "PyJWT>=2.8",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "ruff>=0.4",
+]
+postgres = ["psycopg[binary]>=3.1"]
+server = ["gunicorn>=22.0", "uvicorn>=0.29", "whitenoise>=6.6"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-q --reuse-db"
+filterwarnings = ["ignore::DeprecationWarning:strawberry.*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 110
+src = [".", "apps", "api", "tests"]
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "W", "SIM", "DJ"]
+ignore = ["B008", "N815", "UP037"]
+
+[tool.ruff.lint.per-file-ignores]
+"api/types.py" = ["F821"]        # forward references between mutually dependent types
+"apps/core/management/commands/seed_demo.py" = ["E501"]
+"tests/*" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "api", "config"]
