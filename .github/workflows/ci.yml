@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+    env:
+      DJANGO_SECRET_KEY: ci-secret-key-not-for-production
+      DATABASE_URL: sqlite:///ci.sqlite3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Django checks and migrations are current
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Test
+        run: pytest -q -p no:cacheprovider
+      - name: Seed smoke test
+        run: |
+          python manage.py migrate -v 0
+          python manage.py seed_demo
+          python manage.py awd_check
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t agri-field-monitor:ci .
