@@ -49,8 +49,26 @@ def database_from_url(url: str) -> dict:
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-only-insecure-secret-key-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", False)
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")
+
+
+def with_render_hostname(
+    hosts: list[str], origins: list[str], hostname: str | None
+) -> tuple[list[str], list[str]]:
+    """Render publishes the public hostname as RENDER_EXTERNAL_HOSTNAME; allow it automatically."""
+    hosts, origins = list(hosts), list(origins)
+    if hostname:
+        if hostname not in hosts:
+            hosts.append(hostname)
+        if f"https://{hostname}" not in origins:
+            origins.append(f"https://{hostname}")
+    return hosts, origins
+
+
+ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS = with_render_hostname(
+    env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1"),
+    env_list("DJANGO_CSRF_TRUSTED_ORIGINS", ""),
+    env("RENDER_EXTERNAL_HOSTNAME"),
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
