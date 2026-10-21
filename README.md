@@ -1,3 +1,4 @@
+<!-- topics: django,graphql,strawberry-graphql,python,agritech,agriculture,irrigation,gis,bangladesh -->
 # Agri Field Monitor
 
 Backend for monitoring Alternate Wetting and Drying (AWD) rice irrigation: fields, pipes, water-level readings, alerts and weekly reports behind a GraphQL API.
