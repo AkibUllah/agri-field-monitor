@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agri Field Monitor - GraphQL schema</title>
+  <meta name="description" content="GraphQL schema and REST endpoints of the Agri Field Monitor backend for AWD rice irrigation monitoring.">
+  <style>
+    :root { --ink: #1f2933; --muted: #52606d; --line: #e4e7eb; --accent: #2b7a3d; --bg: #ffffff; --panel: #f5f7fa; --code-bg: #0f1a14; --code-ink: #e6efe9; --kw: #7fd1a0; --ty: #8ec5ff; --str: #d9c27a; --cm: #8a9a90; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+    .hero { border-bottom: 1px solid var(--line); background: var(--panel); padding: 28px 16px 20px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; font-size: 1.6rem; }
+    h2 { font-size: 1.15rem; margin: 32px 0 10px; }
+    p.pitch { margin: 0 0 14px; color: var(--muted); max-width: 72ch; }
+    .links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .links a { display: inline-block; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--accent); color: var(--accent); text-decoration: none; font-size: .92rem; font-weight: 600; }
+    .links a.primary { background: var(--accent); color: #fff; }
+    .note { margin: 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: #fff; color: var(--muted); font-size: .9rem; max-width: 90ch; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
+    .note code, td code { background: var(--panel); padding: 1px 4px; border-radius: 3px; }
+    main { padding: 8px 16px 40px; }
+    table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: var(--panel); font-weight: 600; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 8px; color: var(--muted); font-size: .9rem; }
+    .toolbar a { color: var(--accent); }
+    pre { margin: 0; padding: 16px; overflow: auto; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; font-size: .85rem; line-height: 1.5; max-height: 75vh; }
+    .kw { color: var(--kw); font-weight: 600; } .ty { color: var(--ty); } .str { color: var(--str); } .cm { color: var(--cm); font-style: italic; }
+    footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 24px 16px 40px; }
+    footer a { color: var(--accent); }
+    @media (max-width: 640px) { th:nth-child(3), td:nth-child(3) { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <h1>Agri Field Monitor</h1>
+      <p class="pitch">Backend for monitoring Alternate Wetting and Drying (AWD) rice irrigation: fields, pipes, water-level readings, alerts and weekly reports behind a GraphQL API, with REST endpoints for token issuance and visit photo uploads.</p>
+      <nav class="links" aria-label="Project links">
+        <a class="primary" href="https://github.com/AkibUllah/agri-field-monitor">Source on GitHub</a>
+        <a href="https://codespaces.new/AkibUllah/agri-field-monitor?quickstart=1">Open in Codespaces</a>
+        <a href="https://render.com/deploy?repo=https://github.com/AkibUllah/agri-field-monitor">Deploy to Render</a>
+      </nav>
+      <p class="note">This page is a static schema reference exported with <code>strawberry export-schema</code> on every push to <code>main</code>; there is no backend behind it. Open the Codespace for a running GraphiQL at <code>/graphql/</code> with seeded demo data (login <code>agent</code> / <code>agent1234</code>), or deploy your own copy to Render.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h2>REST endpoints</h2>
+    <p class="pitch">Everything else is GraphQL at <code>POST /graphql/</code>. Operations other than <code>login</code> need <code>Authorization: Bearer &lt;jwt&gt;</code>.</p>
+    <table>
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td><code>/health/</code></td><td>none</td><td>Liveness probe: <code>{status, database}</code></td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/auth/token/</code></td><td>none</td><td><code>{username, password}</code> to <code>{token, token_type, expires_in}</code></td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/v1/visits/{id}/photos/</code></td><td>Bearer</td><td>Multipart <code>image</code> (+ <code>caption</code>); jpg, jpeg, png, webp; 5 MB default</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/visits/{id}/photos/</code></td><td>Bearer</td><td>Photos of a visit with absolute URLs</td></tr>
+        <tr><td><code>POST</code></td><td><code>/graphql/</code></td><td>Bearer</td><td>GraphQL endpoint; GraphiQL IDE on GET when <code>GRAPHIQL=true</code></td></tr>
+        <tr><td><code>GET</code></td><td><code>/admin/</code></td><td>staff session</td><td>Django admin</td></tr>
+      </tbody>
+    </table>
+
+    <h2>GraphQL schema (SDL)</h2>
+    <div class="toolbar">
+      <a href="./schema.graphql" download>Download schema.graphql</a>
+      <span id="stats"></span>
+    </div>
+    <pre><code id="sdl"><!-- SDL --></code></pre>
+  </main>
+
+  <footer>
+    <a href="https://github.com/AkibUllah">Akib Jafor</a> &middot; <a href="https://akibullah.github.io/portfolio">Portfolio</a> &middot; MIT License
+  </footer>
+
+  <script>
+    (function () {
+      var el = document.getElementById("sdl");
+      var src = el.textContent;
+      var count = function (re) { return (src.match(re) || []).length; };
+      document.getElementById("stats").textContent =
+        count(/^type /gm) + " types, " + count(/^input /gm) + " inputs, " + count(/^enum /gm) + " enums";
+      var out = "", i = 0;
+      var esc = function (s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+      while (i < src.length) {
+        var rest = src.slice(i), m;
+        if ((m = rest.match(/^"""[\s\S]*?"""|^"[^"\n]*"/))) { out += '<span class="str">' + esc(m[0]) + "</span>"; i += m[0].length; continue; }
+        if ((m = rest.match(/^#[^\n]*/))) { out += '<span class="cm">' + esc(m[0]) + "</span>"; i += m[0].length; continue; }
+        if ((m = rest.match(/^(type|input|enum|scalar|interface|union|schema|extend|implements|directive|query|mutation|subscription)\b/))) { out += '<span class="kw">' + m[0] + "</span>"; i += m[0].length; continue; }
+        if ((m = rest.match(/^[A-Z][A-Za-z0-9_]*/))) { out += '<span class="ty">' + m[0] + "</span>"; i += m[0].length; continue; }
+        if ((m = rest.match(/^[a-z_][A-Za-z0-9_]*|^\s+|^[^\sA-Za-z"#]+/))) { out += esc(m[0]); i += m[0].length; continue; }
+        out += esc(rest[0]); i += 1;
+      }
+      el.innerHTML = out;
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-.PHONY: install migrate seed run test lint fmt awd-check docker-up docker-down clean
+.PHONY: install migrate seed run test lint fmt awd-check schema docker-up docker-down clean
 
 PY ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -30,6 +30,9 @@ lint:
 fmt:
 	$(PY) -m ruff check --fix .
 	$(PY) -m ruff format .
+
+schema:
+	$(PY) scripts/export_schema.py schema.graphql
 
 docker-up:
 	docker compose up --build -d

@@ -9,6 +9,15 @@ Backend for monitoring Alternate Wetting and Drying (AWD) rice irrigation: field
 ![GraphQL](https://img.shields.io/badge/GraphQL-Strawberry-e10098)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+## Try it live
+
+| | |
+|---|---|
+| Schema reference | https://akibullah.github.io/agri-field-monitor/ — GraphQL SDL exported with `strawberry export-schema` plus the REST endpoints (static; no backend behind it) |
+| Run in your browser | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/AkibUllah/agri-field-monitor?quickstart=1) — starts web + scheduler + PostgreSQL with `docker compose`, migrates and runs `seed_demo`; open forwarded port 8000 at `/graphql/` (GraphiQL) and log in with `agent` / `agent1234` via the `login` mutation or `POST /api/v1/auth/token/`. |
+| One-click deploy | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AkibUllah/agri-field-monitor) — `render.yaml` provisions the web service and a free PostgreSQL; the container migrates and seeds on start. Visit photos live on the container disk, which the free plan does not persist. |
+| Local | `docker compose up` (see Quick Start) |
+
 ## Why this exists
 
 Boro rice in north-west Bangladesh is irrigated from shallow tube wells, and diesel is the farmer's biggest cash cost. AWD, letting the field dry until the water in a perforated tube sits 15 cm below the surface before re-flooding, cuts pumping by roughly a third without hurting yield, but only if somebody is actually reading the tubes. Extension programmes I have worked alongside collected those readings on paper and in WhatsApp groups, so nobody could tell which fields were overdue for irrigation or which agents had stopped visiting. This service is the data backbone for that work: readings from agents and sensors, rules that turn them into alerts, and weekly roll-ups by field, union and upazila for the programme office.

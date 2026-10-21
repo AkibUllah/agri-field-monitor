@@ -27,3 +27,7 @@ staticfiles/
 .vscode/
 .idea/
 .DS_Store
+
+# Exported GraphQL schema and Pages build
+/schema.graphql
+/_site/

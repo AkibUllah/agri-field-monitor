@@ -1,0 +1,40 @@
+# Render blueprint: Django + Strawberry GraphQL API (migrates and seeds demo data on start) + PostgreSQL.
+# ALLOWED_HOSTS and CSRF origins pick up RENDER_EXTERNAL_HOSTNAME automatically. Uploaded visit
+# photos are stored on the container disk, which the free plan does not persist across deploys.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: agri-field-monitor
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: localhost,127.0.0.1
+      - key: GRAPHIQL
+        value: "true"
+      - key: MEDIA_ROOT
+        value: /app/media
+      - key: SEED_DEMO_ON_START
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agri-field-monitor-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: agri-field-monitor-db
+    plan: free
+    databaseName: awd
+    user: awd
