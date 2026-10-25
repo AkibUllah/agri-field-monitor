@@ -6,7 +6,7 @@ import logging
 
 from django.utils.functional import SimpleLazyObject
 
-from apps.core.auth import TokenError, bearer_token, user_from_token
+from apps.core.auth import TokenError, bearer_token, public_detail, user_from_token
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class JWTAuthenticationMiddleware:
                     return user_from_token(token)
                 except TokenError as exc:
                     logger.debug("rejected bearer token: %s", exc)
-                    request.jwt_error = str(exc)
+                    request.jwt_error = public_detail(exc)
                     return session_user
 
             request.user = SimpleLazyObject(resolve)
