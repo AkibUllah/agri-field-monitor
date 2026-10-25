@@ -4,6 +4,8 @@
 Backend for monitoring Alternate Wetting and Drying (AWD) rice irrigation: fields, pipes, water-level readings, alerts and weekly reports behind a GraphQL API.
 
 [![CI](https://github.com/AkibUllah/agri-field-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/AkibUllah/agri-field-monitor/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/AkibUllah/agri-field-monitor/actions/workflows/codeql.yml/badge.svg)](https://github.com/AkibUllah/agri-field-monitor/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/AkibUllah/agri-field-monitor)](https://github.com/AkibUllah/agri-field-monitor/releases)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue)
 ![Django](https://img.shields.io/badge/Django-4.2-092e20)
 ![GraphQL](https://img.shields.io/badge/GraphQL-Strawberry-e10098)
@@ -17,6 +19,16 @@ Backend for monitoring Alternate Wetting and Drying (AWD) rice irrigation: field
 | Run in your browser | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/AkibUllah/agri-field-monitor?quickstart=1) — starts web + scheduler + PostgreSQL with `docker compose`, migrates and runs `seed_demo`; open forwarded port 8000 at `/graphql/` (GraphiQL) and log in with `agent` / `agent1234` via the `login` mutation or `POST /api/v1/auth/token/`. |
 | One-click deploy | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AkibUllah/agri-field-monitor) — `render.yaml` provisions the web service and a free PostgreSQL; the container migrates and seeds on start. Visit photos live on the container disk, which the free plan does not persist. |
 | Local | `docker compose up` (see Quick Start) |
+
+## Screenshots
+
+![GraphQL session](docs/images/graphql-session.png)
+
+*A real session against a local instance seeded with `seed_demo`: health check, JWT from the token endpoint, the open AWD alerts (sensor silent, irrigation due, overflow) and the weekly report grouped by upazila.*
+
+![Schema reference](docs/images/schema-reference.png)
+
+*The REST endpoints and GraphQL SDL in the [live schema reference](https://akibullah.github.io/agri-field-monitor/).*
 
 ## Why this exists
 
@@ -155,7 +167,7 @@ api/
 ├── mutations.py        validated mutations (GraphQLError on bad input)
 ├── permissions.py      IsAuthenticated
 └── rest.py             health, token, photo upload (DRF)
-tests/                  43 tests (pytest-django, SQLite)
+tests/                  47 tests (pytest-django, SQLite)
 Dockerfile · docker-compose.yml · Makefile · .github/workflows/ci.yml
 ```
 
@@ -170,11 +182,11 @@ Covered: polygon validation and area/perimeter accuracy against known squares an
 
 ## Roadmap
 
-- Device ingestion endpoint for LoRa/GSM sensor nodes with per-device API keys and batch readings
-- SMS alerts to farmers (Bangla templates) through a gateway adapter when `IRRIGATION_DUE` opens
-- Rainfall integration (BMD station data) so recorded rain counts toward re-flooding
-- Season-level water and diesel savings estimated from pump hours rather than event counts
-- Export of weekly reports to CSV/XLSX for programme reporting
+- [ ] Device ingestion endpoint for LoRa/GSM sensor nodes with per-device API keys and batch readings (#1)
+- [ ] SMS alerts to farmers (Bangla templates) through a gateway adapter when `IRRIGATION_DUE` opens (#2)
+- [ ] Rainfall integration (BMD station data) so recorded rain counts toward re-flooding (#3)
+- [ ] Season-level water and diesel savings estimated from pump hours rather than event counts (#4)
+- [ ] Export of weekly reports to CSV/XLSX for programme reporting (#5)
 
 ## License
 
