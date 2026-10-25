@@ -15,6 +15,23 @@ class TokenError(Exception):
     pass
 
 
+class TokenExpiredError(TokenError):
+    pass
+
+
+class TokenUserNotFoundError(TokenError):
+    pass
+
+
+def public_detail(exc: TokenError) -> str:
+    """Fixed client-facing message for a token failure (never echoes exception text)."""
+    if isinstance(exc, TokenExpiredError):
+        return "token expired"
+    if isinstance(exc, TokenUserNotFoundError):
+        return "user not found"
+    return "invalid token"
+
+
 def create_token(user: AbstractBaseUser, lifetime: timedelta | None = None) -> str:
     now = datetime.now(timezone.utc)
     lifetime = lifetime or timedelta(hours=settings.JWT_LIFETIME_HOURS)
@@ -31,7 +48,7 @@ def decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except jwt.ExpiredSignatureError as exc:
-        raise TokenError("token expired") from exc
+        raise TokenExpiredError("token expired") from exc
     except jwt.InvalidTokenError as exc:
         raise TokenError("invalid token") from exc
 
@@ -42,7 +59,7 @@ def user_from_token(token: str) -> AbstractBaseUser:
     try:
         user = user_model.objects.get(pk=payload["sub"], is_active=True)
     except (user_model.DoesNotExist, KeyError, ValueError) as exc:
-        raise TokenError("user not found") from exc
+        raise TokenUserNotFoundError("user not found") from exc
     return user
 
 
@@ -67,7 +84,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
         try:
             user = user_from_token(token)
         except TokenError as exc:
-            raise exceptions.AuthenticationFailed(str(exc)) from exc
+            raise exceptions.AuthenticationFailed(public_detail(exc)) from exc
         return user, token
 
     def authenticate_header(self, request) -> str:  # noqa: ANN001
