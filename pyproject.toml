@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Akib Jafor" }]
 dependencies = [
-    "Django>=4.2,<5.0",
+    "Django>=4.2,<6.0",
     "strawberry-graphql>=0.230",
     "strawberry-graphql-django>=0.40",
     "djangorestframework>=3.15",
