@@ -1,16 +1,21 @@
-"""REST endpoints: health, token issuance and multipart photo upload (GraphQL stays JSON-only)."""
+"""REST endpoints: health, token issuance, photo upload and report downloads (GraphQL stays JSON-only)."""
 
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.db import connection
+from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.alerts.export import export_filename, to_csv, to_xlsx
+from apps.alerts.reports import GROUP_FIELDS, monday_of, weekly_report
 from apps.core.auth import create_token
 from apps.monitoring.models import FieldVisit, VisitPhoto
 
@@ -112,3 +117,51 @@ class VisitPhotoUploadView(APIView):
         return Response(
             VisitPhotoSerializer(photo, context={"request": request}).data, status=status.HTTP_201_CREATED
         )
+
+
+EXPORT_CONTENT_TYPES = {
+    "csv": "text/csv; charset=utf-8",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+
+
+class WeeklyReportQuerySerializer(serializers.Serializer):
+    week_start = serializers.DateField(required=False)
+    group_by = serializers.ChoiceField(choices=sorted(GROUP_FIELDS), default="field")
+    upazila = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    union_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+
+
+class WeeklyReportExportView(APIView):
+    """``GET /api/v1/reports/weekly.csv`` or ``.xlsx``: the ``weeklyReport`` rows as a file.
+
+    Same filters as the GraphQL query; ``week_start`` defaults to the last full week.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, fmt: str):  # noqa: ANN001
+        if fmt not in EXPORT_CONTENT_TYPES:
+            return Response(
+                {"detail": f"unsupported format '{fmt}'; use csv or xlsx"}, status=status.HTTP_404_NOT_FOUND
+            )
+        query = WeeklyReportQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        params = query.validated_data
+        week_start = params.get("week_start") or monday_of(timezone.localdate() - timedelta(days=7))
+        rows = weekly_report(
+            week_start=week_start,
+            group_by=params["group_by"],
+            upazila=params["upazila"] or None,
+            union_name=params["union_name"] or None,
+        )
+        if fmt == "csv":
+            body = to_csv(rows)
+        else:
+            filters = {"upazila": params["upazila"], "union": params["union_name"]}
+            body = to_xlsx(rows, week_start, params["group_by"], filters=filters)
+        response = HttpResponse(body, content_type=EXPORT_CONTENT_TYPES[fmt])
+        filename = export_filename(week_start, params["group_by"], fmt)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["Cache-Control"] = "no-store"  # farmer names and phone-linked data stay off shared caches
+        return response

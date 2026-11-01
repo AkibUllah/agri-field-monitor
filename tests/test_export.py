@@ -1,9 +1,12 @@
 import csv
 import io
-from datetime import date
+from datetime import date, timedelta
+
+import pytest
+from django.utils import timezone
 
 from apps.alerts.export import export_filename, safe_text, to_csv, to_xlsx
-from apps.alerts.reports import REPORT_COLUMNS, ReportRow
+from apps.alerts.reports import REPORT_COLUMNS, ReportRow, monday_of, weekly_report
 
 WEEK = date(2026, 2, 2)
 
@@ -120,3 +123,78 @@ def test_xlsx_with_no_rows_still_has_headers():
 def test_xlsx_drops_control_characters():
     sheet = load_xlsx(to_xlsx([make_row(label="plot\x07 1")], WEEK, "field"))["Weekly report"]
     assert sheet["C2"].value == "plot 1"
+
+
+# -- REST download endpoint -----------------------------------------------------------------------
+
+XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@pytest.mark.django_db
+def test_export_requires_auth(client):
+    assert client.get("/api/v1/reports/weekly.csv").status_code in (401, 403)
+
+
+@pytest.mark.django_db
+def test_csv_download_matches_weekly_report(client, auth_headers, two_upazilas):
+    week_start, field, other = two_upazilas
+    response = client.get(
+        "/api/v1/reports/weekly.csv",
+        {"week_start": week_start.isoformat(), "group_by": "upazila"},
+        **auth_headers,
+    )
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/csv; charset=utf-8"
+    assert response["Content-Disposition"] == (
+        f'attachment; filename="awd-weekly-report-{week_start.isoformat()}-by-upazila.csv"'
+    )
+    assert response["Cache-Control"] == "no-store"
+    rows = read_csv(response.content)
+    by_key = {line[1]: dict(zip(rows[0], line, strict=True)) for line in rows[1:]}
+    assert set(by_key) == {"Paba", "Sherpur"}
+    expected = {r.key: r for r in weekly_report(week_start, group_by="upazila")}
+    assert by_key["Paba"]["Readings"] == str(expected["Paba"].readings) == "7"
+    assert by_key["Paba"]["Irrigation events"] == "2"
+    assert by_key["Sherpur"]["Visits"] == "1"
+
+
+@pytest.mark.django_db
+def test_xlsx_download_with_filters(client, auth_headers, two_upazilas):
+    week_start, field, other = two_upazilas
+    response = client.get(
+        "/api/v1/reports/weekly.xlsx",
+        {"week_start": week_start.isoformat(), "group_by": "field", "upazila": "sherpur"},
+        **auth_headers,
+    )
+    assert response.status_code == 200
+    assert response["Content-Type"] == XLSX_TYPE
+    book = load_xlsx(response.content)
+    sheet = book["Weekly report"]
+    assert sheet.max_row == 2 and sheet["B2"].value == str(other.id)
+    notes = {row[0].value: row[1].value for row in book["Notes"].iter_rows()}
+    assert notes["Filter: upazila"] == "sherpur"
+
+
+@pytest.mark.django_db
+def test_export_defaults_to_last_full_week(client, auth_headers, field):
+    response = client.get("/api/v1/reports/weekly.csv", **auth_headers)
+    assert response.status_code == 200
+    last_monday = monday_of(timezone.localdate() - timedelta(days=7))
+    assert f"report-{last_monday.isoformat()}-by-field.csv" in response["Content-Disposition"]
+    assert len(read_csv(response.content)) == 2  # header + the one active field
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("path", "params", "status", "error_key"),
+    [
+        ("/api/v1/reports/weekly.pdf", {}, 404, "detail"),
+        ("/api/v1/reports/weekly.csv", {"group_by": "district"}, 400, "group_by"),
+        ("/api/v1/reports/weekly.csv", {"week_start": "02/02/2026"}, 400, "week_start"),
+        ("/api/v1/reports/weekly.xlsx", {"upazila": "x" * 101}, 400, "upazila"),
+    ],
+)
+def test_export_rejects_bad_requests(client, auth_headers, path, params, status, error_key):
+    response = client.get(path, params, **auth_headers)
+    assert response.status_code == status
+    assert error_key in response.json()
