@@ -40,6 +40,7 @@ Boro rice in north-west Bangladesh is irrigated from shallow tube wells, and die
 - Field tubes (pipes) with manual and device readings; irrigation events; field visits with notes, GPS and photos
 - AWD rules: `IRRIGATION_DUE` when the daily minimum level stays at or below the field threshold (default -15 cm) for N consecutive days since the last irrigation, `OVERFLOW` for wasted standing water, `SENSOR_SILENT` when readings stop; one open alert per field and kind enforced by a DB constraint, auto-resolved when the condition clears
 - Weekly progress report grouped by field, union or upazila: readings, average and minimum level, field-days below threshold, irrigation events per field, visits, alerts, and an estimated water saving against continuous flooding
+- Report export for programme reporting: `GET /api/v1/reports/weekly.csv` or `.xlsx` with the same filters as the GraphQL query, and an `export_weekly_report` command for cron. The CSV is UTF-8 with a BOM, so Bangla names open correctly in Excel, and text cells are guarded against formula injection. The XLSX has typed number and date cells, a frozen header with filters, and a notes sheet recording the week, filters and how the saving is estimated
 - Strawberry GraphQL API with filtered, paginated queries and validated mutations; GraphiQL at `/graphql/`
 - DRF endpoints for the things GraphQL is bad at: multipart photo upload (type and size validated) and token issuance; `/health/`
 - Stateless JWT (PyJWT) shared by a Django middleware (GraphQL) and a DRF authentication class (REST)
@@ -147,7 +148,17 @@ REST:
 | `POST` | `/api/v1/auth/token/` | none | `{username, password}` to `{token, token_type, expires_in}` |
 | `POST` | `/api/v1/visits/{id}/photos/` | Bearer | multipart `image` (+ `caption`); jpg/jpeg/png/webp, 5 MB default |
 | `GET` | `/api/v1/visits/{id}/photos/` | Bearer | photos of a visit with absolute URLs |
+| `GET` | `/api/v1/reports/weekly.csv` · `.xlsx` | Bearer | `weeklyReport` rows as a file; query `week_start` (YYYY-MM-DD, default last full week), `group_by` (`field`, `union`, `upazila`), `upazila`, `union_name` |
 | `GET` | `/admin/` | staff session | Django admin |
+
+Export a report:
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" -OJ \
+  "localhost:8000/api/v1/reports/weekly.xlsx?group_by=upazila"    # awd-weekly-report-<monday>-by-upazila.xlsx
+
+python manage.py export_weekly_report --format csv --group-by field --upazila Paba --output reports/
+```
 
 Settings come from `DJANGO_*`, `DATABASE_URL`, `AWD_*`, `PHOTO_*` and `JWT_*` environment variables; see [`.env.example`](.env.example).
 
@@ -158,16 +169,16 @@ config/                 settings (env-driven), urls, asgi/wsgi
 apps/
 ├── farms/              Farmer, Field (polygon -> area), Season; geo.py (projection + shoelace)
 ├── monitoring/         Pipe, WaterLevelReading, IrrigationEvent, FieldVisit, VisitPhoto
-├── alerts/             Alert model; awd.py (rules + reconciliation); reports.py (weekly aggregation)
-└── core/               JWT helpers, middleware, seed_demo and awd_check commands
+├── alerts/             Alert model; awd.py (rules + reconciliation); reports.py (weekly aggregation); export.py (CSV/XLSX)
+└── core/               JWT helpers, middleware, seed_demo, awd_check and export_weekly_report commands
 api/
 ├── schema.py           strawberry.Schema(query, mutation)
 ├── types.py            strawberry_django types + pagination wrappers
 ├── queries.py          filtered / paginated resolvers
 ├── mutations.py        validated mutations (GraphQLError on bad input)
 ├── permissions.py      IsAuthenticated
-└── rest.py             health, token, photo upload (DRF)
-tests/                  47 tests (pytest-django, SQLite)
+└── rest.py             health, token, photo upload, report downloads (DRF)
+tests/                  68 tests (pytest-django, SQLite)
 Dockerfile · docker-compose.yml · Makefile · .github/workflows/ci.yml
 ```
 
@@ -178,7 +189,7 @@ make test     # pytest-django on SQLite, no services needed
 make lint     # ruff check + ruff format --check
 ```
 
-Covered: polygon validation and area/perimeter accuracy against known squares and triangles, unit conversions, model-level area and location derivation; AWD rules (daily minimums in local time, streaks with tolerated gaps, irrigation resetting the streak, silent and overflow alerts, severities), reconciliation (open, keep, resolve) and the one-open-alert constraint; weekly report sums per field and upazila including field-days below threshold, rainfall exclusion and the saving estimate; GraphQL auth, login, every query's filters and pagination, every mutation's validation paths and the irrigation to resolved-alert flow; REST health, token issuance, JWT expiry and inactive users, middleware fallback, photo upload success, listing and each validation branch; `seed_demo` realism and idempotence plus `awd_check`.
+Covered: polygon validation and area/perimeter accuracy against known squares and triangles, unit conversions, model-level area and location derivation; AWD rules (daily minimums in local time, streaks with tolerated gaps, irrigation resetting the streak, silent and overflow alerts, severities), reconciliation (open, keep, resolve) and the one-open-alert constraint; weekly report sums per field and upazila including field-days below threshold, rainfall exclusion and the saving estimate; CSV and XLSX exports (headers, typed cells, Bangla text, formula-injection guard, control characters), the download endpoint's auth, filters, defaults and validation, and the export command; GraphQL auth, login, every query's filters and pagination, every mutation's validation paths and the irrigation to resolved-alert flow; REST health, token issuance, JWT expiry and inactive users, middleware fallback, photo upload success, listing and each validation branch; `seed_demo` realism and idempotence plus `awd_check`.
 
 ## Roadmap
 
@@ -186,7 +197,6 @@ Covered: polygon validation and area/perimeter accuracy against known squares an
 - [ ] SMS alerts to farmers (Bangla templates) through a gateway adapter when `IRRIGATION_DUE` opens (#2)
 - [ ] Rainfall integration (BMD station data) so recorded rain counts toward re-flooding (#3)
 - [ ] Season-level water and diesel savings estimated from pump hours rather than event counts (#4)
-- [ ] Export of weekly reports to CSV/XLSX for programme reporting (#5)
 
 ## License
 
