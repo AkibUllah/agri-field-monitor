@@ -7,7 +7,7 @@ Backend for monitoring Alternate Wetting and Drying (AWD) rice irrigation: field
 [![CodeQL](https://github.com/AkibUllah/agri-field-monitor/actions/workflows/codeql.yml/badge.svg)](https://github.com/AkibUllah/agri-field-monitor/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/AkibUllah/agri-field-monitor)](https://github.com/AkibUllah/agri-field-monitor/releases)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue)
-![Django](https://img.shields.io/badge/Django-4.2-092e20)
+![Django](https://img.shields.io/badge/Django-4.2%20%7C%205.2-092e20)
 ![GraphQL](https://img.shields.io/badge/GraphQL-Strawberry-e10098)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -78,11 +78,11 @@ Key decisions:
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 4.2, Django REST Framework 3.15 |
+| Framework | Django 4.2 LTS or 5.2 LTS, Django REST Framework 3.15 |
 | GraphQL | Strawberry GraphQL + strawberry-graphql-django (types mapped from models) |
 | Auth | PyJWT HS256, middleware for GraphQL, DRF authentication class for REST |
 | Database | PostgreSQL 16 (compose) / SQLite (dev, tests) via `DATABASE_URL` |
-| Tooling | pytest-django, ruff, GitHub Actions (3.10 / 3.11, migration check, seed smoke test, docker build) |
+| Tooling | pytest-django, ruff, GitHub Actions (Python 3.10 / 3.11 x Django 4.2 / 5.2, migration check, seed smoke test, docker build) |
 
 ## Quick Start
 
