@@ -57,6 +57,7 @@
         <tr><td><code>POST</code></td><td><code>/api/v1/auth/token/</code></td><td>none</td><td><code>{username, password}</code> to <code>{token, token_type, expires_in}</code></td></tr>
         <tr><td><code>POST</code></td><td><code>/api/v1/visits/{id}/photos/</code></td><td>Bearer</td><td>Multipart <code>image</code> (+ <code>caption</code>); jpg, jpeg, png, webp; 5 MB default</td></tr>
         <tr><td><code>GET</code></td><td><code>/api/v1/visits/{id}/photos/</code></td><td>Bearer</td><td>Photos of a visit with absolute URLs</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/v1/reports/weekly.csv</code> · <code>.xlsx</code></td><td>Bearer</td><td>Weekly report as a file; <code>week_start</code>, <code>group_by</code>, <code>upazila</code>, <code>union_name</code></td></tr>
         <tr><td><code>POST</code></td><td><code>/graphql/</code></td><td>Bearer</td><td>GraphQL endpoint; GraphiQL IDE on GET when <code>GRAPHIQL=true</code></td></tr>
         <tr><td><code>GET</code></td><td><code>/admin/</code></td><td>staff session</td><td>Django admin</td></tr>
       </tbody>

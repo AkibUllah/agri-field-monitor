@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Weekly report export to CSV and XLSX for programme reporting (#5): `GET /api/v1/reports/weekly.csv` and `/api/v1/reports/weekly.xlsx` (Bearer auth, same filters as the `weeklyReport` query, last full week by default) and the `export_weekly_report` management command (`make report`), which writes a dated file for cron.
+- CSV exports are UTF-8 with a BOM and neutralise cells that spreadsheet apps would run as formulas; XLSX exports keep numbers and dates typed, store user text as text, and add a notes sheet with the week, filters and the saving formula.
+- CI tests every change on Django 4.2 LTS and 5.2 LTS, and the seed smoke test now exports both formats.
 - CodeQL analysis for Python and GitHub Actions on pushes and pull requests to `main` and on a weekly schedule.
 - Dependabot version updates for pip, Docker and GitHub Actions, with minor and patch updates grouped per ecosystem.
 - README screenshots: a GraphQL session against the seeded demo and the schema reference.
@@ -17,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - CI workflow runs with a read-only `GITHUB_TOKEN`.
-- Test count in the README updated to 47.
+- `openpyxl` is a new runtime dependency (XLSX writing).
+- Test count in the README updated to 68.
 
 ## [0.1.0] - 2026-10-25
 
