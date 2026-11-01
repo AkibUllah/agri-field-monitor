@@ -46,6 +46,30 @@ class ReportRow:
         return asdict(self)
 
 
+# Column order and human headers for file exports (CSV/XLSX). Every ReportRow field is listed
+# once, so exported sheets match the GraphQL ``weeklyReport`` rows one to one.
+REPORT_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("group_by", "Grouped by"),
+    ("key", "Key"),
+    ("label", "Label"),
+    ("week_start", "Week start"),
+    ("week_end", "Week end"),
+    ("fields", "Fields"),
+    ("area_ha", "Area (ha)"),
+    ("readings", "Readings"),
+    ("avg_level_cm", "Average level (cm)"),
+    ("min_level_cm", "Minimum level (cm)"),
+    ("field_days_below_threshold", "Field-days below threshold"),
+    ("irrigation_events", "Irrigation events"),
+    ("irrigation_per_field", "Irrigations per field"),
+    ("estimated_water_saving_pct", "Estimated water saving (%)"),
+    ("visits", "Visits"),
+    ("alerts_opened", "Alerts opened"),
+    ("alerts_open_now", "Alerts open now"),
+    ("field_ids", "Field IDs"),
+)
+
+
 def week_bounds(week_start: date) -> tuple[datetime, datetime]:
     """Local-midnight bounds [start, end) for the 7 days beginning ``week_start``."""
     tz = timezone.get_default_timezone()

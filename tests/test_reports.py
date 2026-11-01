@@ -81,3 +81,12 @@ def test_weekly_report_defaults_to_last_full_week(field):
     assert len(rows) == 1
     assert rows[0].week_start == monday_of(timezone.localdate() - timedelta(days=7))
     assert rows[0].avg_level_cm is None and rows[0].readings == 0
+
+
+def test_report_columns_cover_every_row_field():
+    from dataclasses import fields as dc_fields
+
+    from apps.alerts.reports import REPORT_COLUMNS, ReportRow
+
+    assert [name for name, _ in REPORT_COLUMNS] == [f.name for f in dc_fields(ReportRow)]
+    assert len({header for _, header in REPORT_COLUMNS}) == len(REPORT_COLUMNS)
