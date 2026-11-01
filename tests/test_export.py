@@ -243,3 +243,14 @@ def test_export_command_rejects_bad_week_start():
 
     with pytest.raises(CommandError, match="YYYY-MM-DD"):
         call_command("export_weekly_report", "--week-start=02/02/2026", stdout=io.StringIO())
+
+
+@pytest.mark.django_db
+def test_export_command_creates_missing_output_directory(tmp_path, field):
+    from django.core.management import call_command
+
+    out_dir = tmp_path / "reports" / "weekly"
+    for fmt in ("xlsx", "csv"):
+        call_command("export_weekly_report", f"--format={fmt}", f"--output={out_dir}/", stdout=io.StringIO())
+    assert out_dir.is_dir()
+    assert sorted(p.suffix for p in out_dir.iterdir()) == [".csv", ".xlsx"]
