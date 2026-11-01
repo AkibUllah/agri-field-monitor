@@ -178,7 +178,7 @@ api/
 ├── mutations.py        validated mutations (GraphQLError on bad input)
 ├── permissions.py      IsAuthenticated
 └── rest.py             health, token, photo upload, report downloads (DRF)
-tests/                  68 tests (pytest-django, SQLite)
+tests/                  69 tests (pytest-django, SQLite)
 Dockerfile · docker-compose.yml · Makefile · .github/workflows/ci.yml
 ```
 
