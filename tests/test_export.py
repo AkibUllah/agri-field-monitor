@@ -198,3 +198,48 @@ def test_export_rejects_bad_requests(client, auth_headers, path, params, status,
     response = client.get(path, params, **auth_headers)
     assert response.status_code == status
     assert error_key in response.json()
+
+
+# -- management command ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_export_command_writes_xlsx_into_a_directory(tmp_path, two_upazilas):
+    from django.core.management import call_command
+
+    week_start, field, other = two_upazilas
+    out = io.StringIO()
+    call_command(
+        "export_weekly_report", "--week-start", week_start.isoformat(), "-o", str(tmp_path), stdout=out
+    )
+    target = tmp_path / f"awd-weekly-report-{week_start.isoformat()}-by-upazila.xlsx"
+    assert f"wrote 2 rows (xlsx, by upazila, week of {week_start})" in out.getvalue()
+    sheet = load_xlsx(target.read_bytes())["Weekly report"]
+    assert sorted(sheet.cell(r, 2).value for r in (2, 3)) == ["Paba", "Sherpur"]
+
+
+@pytest.mark.django_db
+def test_export_command_csv_with_filters_to_a_file(tmp_path, two_upazilas):
+    from django.core.management import call_command
+
+    week_start, field, other = two_upazilas
+    target = tmp_path / "reports" / "sherpur.csv"
+    call_command(
+        "export_weekly_report",
+        "--format=csv",
+        "--group-by=field",
+        f"--week-start={week_start.isoformat()}",
+        "--upazila=Sherpur",
+        f"--output={target}",
+        stdout=io.StringIO(),
+    )
+    rows = read_csv(target.read_bytes())
+    assert len(rows) == 2 and rows[1][1] == str(other.id)
+
+
+@pytest.mark.django_db
+def test_export_command_rejects_bad_week_start():
+    from django.core.management import CommandError, call_command
+
+    with pytest.raises(CommandError, match="YYYY-MM-DD"):
+        call_command("export_weekly_report", "--week-start=02/02/2026", stdout=io.StringIO())

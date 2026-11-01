@@ -1,4 +1,4 @@
-.PHONY: install migrate seed run test lint fmt awd-check schema docker-up docker-down clean
+.PHONY: install migrate seed run test lint fmt awd-check report schema docker-up docker-down clean
 
 PY ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -19,6 +19,9 @@ run:
 
 awd-check:
 	$(PY) manage.py awd_check
+
+report:
+	$(PY) manage.py export_weekly_report --output reports/
 
 test:
 	$(PY) -m pytest

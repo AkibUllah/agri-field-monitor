@@ -46,6 +46,9 @@ jobs:
           python manage.py migrate -v 0
           python manage.py seed_demo
           python manage.py awd_check
+          python manage.py export_weekly_report --output reports/
+          python manage.py export_weekly_report --format csv --group-by field --output reports/
+          ls -l reports/
 
   docker:
     runs-on: ubuntu-latest
