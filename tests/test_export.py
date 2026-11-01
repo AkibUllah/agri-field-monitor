@@ -2,7 +2,7 @@ import csv
 import io
 from datetime import date
 
-from apps.alerts.export import export_filename, safe_text, to_csv
+from apps.alerts.export import export_filename, safe_text, to_csv, to_xlsx
 from apps.alerts.reports import REPORT_COLUMNS, ReportRow
 
 WEEK = date(2026, 2, 2)
@@ -70,3 +70,53 @@ def test_safe_text_leaves_plain_text_alone():
 
 def test_export_filename():
     assert export_filename(WEEK, "upazila", "csv") == "awd-weekly-report-2026-02-02-by-upazila.csv"
+
+
+def load_xlsx(data: bytes):
+    from openpyxl import load_workbook
+
+    return load_workbook(io.BytesIO(data))
+
+
+def test_xlsx_table_is_typed_and_navigable():
+    rows = [make_row(), make_row(key="8", label="Khanpur plot 1 (Rafiqul Islam)", field_ids=[8, 9])]
+    book = load_xlsx(to_xlsx(rows, WEEK, "field", filters={"upazila": "Paba", "union": ""}))
+    assert book.sheetnames == ["Weekly report", "Notes"]
+    sheet = book["Weekly report"]
+    assert [c.value for c in sheet[1]] == [header for _, header in REPORT_COLUMNS]
+    assert sheet[1][0].font.bold
+    assert sheet.max_row == 3
+    assert sheet.freeze_panes == "A2"
+    assert sheet.auto_filter.ref == "A1:R3"
+    headers = [c.value for c in sheet[1]]
+    first = {h: c for h, c in zip(headers, sheet[2], strict=True)}
+    assert first["Week start"].value.date() == WEEK and first["Week start"].number_format == "yyyy-mm-dd"
+    assert first["Average level (cm)"].value == -9.3 and first["Average level (cm)"].number_format == "0.0"
+    assert first["Readings"].value == 7
+    assert sheet.cell(3, headers.index("Field IDs") + 1).value == "8,9"
+
+    notes = {row[0].value: row[1].value for row in book["Notes"].iter_rows()}
+    assert notes["Week"] == "2026-02-02 to 2026-02-08"
+    assert notes["Grouped by"] == "field"
+    assert notes["Filter: upazila"] == "Paba"
+    assert "Filter: union" not in notes  # empty filters are left out
+    assert notes["Rows"] == 2
+
+
+def test_xlsx_keeps_formula_like_text_as_text():
+    label = '=HYPERLINK("http://x","click")'
+    book = load_xlsx(to_xlsx([make_row(label=label)], WEEK, "field", filters={"upazila": "=1+1"}))
+    cell = book["Weekly report"]["C2"]
+    assert cell.value == label and cell.data_type == "s"
+    notes = {row[0].value: row[1] for row in book["Notes"].iter_rows()}
+    assert notes["Filter: upazila"].value == "=1+1" and notes["Filter: upazila"].data_type == "s"
+
+
+def test_xlsx_with_no_rows_still_has_headers():
+    sheet = load_xlsx(to_xlsx([], WEEK, "upazila"))["Weekly report"]
+    assert sheet.max_row == 1 and sheet.auto_filter.ref == "A1:R1"
+
+
+def test_xlsx_drops_control_characters():
+    sheet = load_xlsx(to_xlsx([make_row(label="plot\x07 1")], WEEK, "field"))["Weekly report"]
+    assert sheet["C2"].value == "plot 1"
