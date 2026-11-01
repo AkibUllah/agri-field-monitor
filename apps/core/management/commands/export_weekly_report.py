@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -50,8 +51,10 @@ class Command(BaseCommand):
             body = to_xlsx(rows, week_start, group_by, filters=filters)
 
         default_name = export_filename(week_start, group_by, fmt)
-        target = Path(options["output"]) if options["output"] else Path(default_name)
-        if target.is_dir():
+        output = options["output"] or ""
+        target = Path(output or default_name)
+        # "reports/" means a directory even before it exists; Path() would drop the trailing slash.
+        if output.endswith(("/", os.sep)) or target.is_dir():
             target = target / default_name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(body)
