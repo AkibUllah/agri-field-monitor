@@ -31,3 +31,4 @@ staticfiles/
 # Exported GraphQL schema and Pages build
 /schema.graphql
 /_site/
+reports/
