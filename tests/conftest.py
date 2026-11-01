@@ -9,9 +9,11 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from django.utils import timezone
 
+from apps.alerts.models import Alert
+from apps.alerts.reports import monday_of, week_bounds
 from apps.core.auth import create_token
 from apps.farms.models import Farmer, Field, Season
-from apps.monitoring.models import Pipe
+from apps.monitoring.models import FieldVisit, IrrigationEvent, Pipe
 
 # ~100 m x 100 m square near Paba, Rajshahi (lat/lng degrees per metre at 24.4N).
 SQUARE_100M = [
@@ -103,6 +105,30 @@ class GraphQLClient:
         )
         assert response.status_code == 200, response.content
         return response.json()
+
+
+@pytest.fixture
+def two_upazilas(farmer, field, pipe, user):
+    other_farmer = Farmer.objects.create(
+        name="Rafiqul Islam", phone="01811000102", village="Khanpur", union_name="Khanpur",
+        upazila="Sherpur", district="Bogura",
+    )  # fmt: skip
+    other = Field.objects.create(farmer=other_farmer, name="Khanpur plot 1", polygon=SQUARE_100M)
+    other_pipe = Pipe.objects.create(field=other, code="SHE-002-A", installed_on=timezone.localdate())
+    week_start = monday_of(timezone.localdate() - timedelta(days=7))
+    end = week_bounds(week_start)[1] - timedelta(hours=12)  # last day of that week, 12:00
+    add_readings(pipe, [-4, -8, -12, -15, -16, -3, -7], end=end)  # 2 field-days below -15
+    add_readings(other_pipe, [-2, -5, -9], end=end)
+    for days_ago in (1, 4):
+        IrrigationEvent.objects.create(field=field, started_at=end - timedelta(days=days_ago), logged_by=user)
+    IrrigationEvent.objects.create(
+        field=field, started_at=end - timedelta(days=2), method=IrrigationEvent.Method.RAIN
+    )
+    FieldVisit.objects.create(field=other, visitor=user, visited_at=end - timedelta(days=3))
+    Alert.objects.create(
+        field=field, kind=Alert.Kind.IRRIGATION_DUE, message="x", triggered_at=end - timedelta(days=2)
+    )
+    return week_start, field, other
 
 
 @pytest.fixture

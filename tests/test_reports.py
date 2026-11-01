@@ -3,11 +3,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apps.alerts.models import Alert
 from apps.alerts.reports import monday_of, week_bounds, weekly_report
-from apps.farms.models import Farmer, Field
-from apps.monitoring.models import FieldVisit, IrrigationEvent, Pipe
-from tests.conftest import SQUARE_100M, add_readings
 
 
 def test_week_helpers():
@@ -16,30 +12,6 @@ def test_week_helpers():
     start, end = week_bounds(monday)
     assert (end - start).days == 7
     assert timezone.localtime(start).hour == 0
-
-
-@pytest.fixture
-def two_upazilas(farmer, field, pipe, user):
-    other_farmer = Farmer.objects.create(
-        name="Rafiqul Islam", phone="01811000102", village="Khanpur", union_name="Khanpur",
-        upazila="Sherpur", district="Bogura",
-    )  # fmt: skip
-    other = Field.objects.create(farmer=other_farmer, name="Khanpur plot 1", polygon=SQUARE_100M)
-    other_pipe = Pipe.objects.create(field=other, code="SHE-002-A", installed_on=timezone.localdate())
-    week_start = monday_of(timezone.localdate() - timedelta(days=7))
-    end = week_bounds(week_start)[1] - timedelta(hours=12)  # last day of that week, 12:00
-    add_readings(pipe, [-4, -8, -12, -15, -16, -3, -7], end=end)  # 2 field-days below -15
-    add_readings(other_pipe, [-2, -5, -9], end=end)
-    for days_ago in (1, 4):
-        IrrigationEvent.objects.create(field=field, started_at=end - timedelta(days=days_ago), logged_by=user)
-    IrrigationEvent.objects.create(
-        field=field, started_at=end - timedelta(days=2), method=IrrigationEvent.Method.RAIN
-    )
-    FieldVisit.objects.create(field=other, visitor=user, visited_at=end - timedelta(days=3))
-    Alert.objects.create(
-        field=field, kind=Alert.Kind.IRRIGATION_DUE, message="x", triggered_at=end - timedelta(days=2)
-    )
-    return week_start, field, other
 
 
 @pytest.mark.django_db
