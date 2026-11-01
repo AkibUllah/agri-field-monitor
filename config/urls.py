@@ -5,7 +5,7 @@ from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 from strawberry.django.views import GraphQLView
 
-from api.rest import HealthView, TokenView, VisitPhotoUploadView
+from api.rest import HealthView, TokenView, VisitPhotoUploadView, WeeklyReportExportView
 from api.schema import schema
 
 urlpatterns = [
@@ -23,6 +23,7 @@ urlpatterns = [
         VisitPhotoUploadView.as_view(),
         name="visit-photo-upload",
     ),
+    path("api/v1/reports/weekly.<str:fmt>", WeeklyReportExportView.as_view(), name="weekly-report-export"),
 ]
 
 if settings.DEBUG:
